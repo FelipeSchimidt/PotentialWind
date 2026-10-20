@@ -1,0 +1,115 @@
+<div class="container">
+  <div class="db-header">
+    <div>
+      <h1 class="page-title">Persistência & Migração de Banco de Dados</h1>
+      <p class="page-desc">
+        Configuração do provedor de banco de dados do Entity Framework Core.
+        Inicialmente operando com <strong>SQLite</strong> e estruturado para migração transparente para <strong>MySQL</strong>.
+      </p>
+    </div>
+    <button class="btn btn-outline" (click)="refreshStatus()" [disabled]="loading">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+      </svg>
+      {{ loading ? 'Verificando...' : 'Atualizar Status' }}
+    </button>
+  </div>
+
+  <!-- Status Cards -->
+  <div class="grid-2 db-overview-grid" *ngIf="status">
+    <div class="card status-card">
+      <div class="card-head">
+        <h2 class="head-title">Provedor Ativo</h2>
+        <span class="badge" [class.badge-success]="status.canConnect" [class.badge-warning]="!status.canConnect">
+          {{ status.canConnect ? 'Conectado' : 'Falha de Conexão' }}
+        </span>
+      </div>
+
+      <div class="provider-badge-box">
+        <span class="provider-name">{{ status.currentProvider }}</span>
+        <span class="provider-sub">
+          {{ status.currentProvider === 'Sqlite' ? 'potentialwind.db (Arquivo Local)' : 'MySQL / MariaDB Server' }}
+        </span>
+      </div>
+
+      <div class="conn-box">
+        <span class="conn-label">String de Conexão Ativa:</span>
+        <code>{{ status.connectionStringSample }}</code>
+      </div>
+
+      <div class="grid-3 counts-grid">
+        <div class="count-item">
+          <span class="c-val">{{ status.windFarmsCount }}</span>
+          <span class="c-label">Parques Eólicos</span>
+        </div>
+        <div class="count-item">
+          <span class="c-val">{{ status.windTurbinesCount }}</span>
+          <span class="c-label">Aerogeradores</span>
+        </div>
+        <div class="count-item">
+          <span class="c-val">{{ status.measurementsCount }}</span>
+          <span class="c-label">Medições</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Architecture & Portability Box -->
+    <div class="card arch-card">
+      <h2 class="head-title">Arquitetura de Portabilidade</h2>
+      <p class="arch-desc">
+        A persistência foi construída com abstração transparente no <code>DatabaseProviderExtensions.cs</code>.
+        Todas as entidades utilizam tipos de dados compatíveis tanto com SQLite quanto com MySQL
+        (precisões ANSI standard <code>decimal(18,2)</code>, chaves autoincrementadas, índices e restrições de integridade referencial).
+      </p>
+
+      <div class="feature-bullets">
+        <div class="bullet-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="b-icon">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <div>
+            <strong>Pacote Pomelo.EntityFrameworkCore.MySql 9.0 instalado</strong>
+            <p>Drivers oficiais de alta performance para MySQL e MariaDB.</p>
+          </div>
+        </div>
+
+        <div class="bullet-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="b-icon">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <div>
+            <strong>Inicialização Automática com SeedData</strong>
+            <p>Ao apontar para o MySQL, todas as tabelas e dados prévios são criados automaticamente.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Migration Steps Guide -->
+  <div class="card migration-steps-card mt-4">
+    <h2 class="head-title">Passo a Passo para Ativação do MySQL</h2>
+    <p class="guide-subtitle">Quando estiver pronto para migrar do SQLite para o banco MySQL em produção ou desenvolvimento:</p>
+
+    <div class="steps-list">
+      <div class="step-card" *ngFor="let step of guideSteps; let idx = index">
+        <div class="step-number">{{ idx + 1 }}</div>
+        <div class="step-text">{{ step }}</div>
+      </div>
+    </div>
+
+    <!-- Configuration Snippet -->
+    <div class="code-preview-box">
+      <div class="code-header">
+        <span>backend/PotentialWind.Api/appsettings.json</span>
+      </div>
+      <pre><code>&#123;
+  "DatabaseProvider": "MySql",
+  "ConnectionStrings": &#123;
+    "SqliteConnection": "Data Source=potentialwind.db",
+    "MySqlConnection": "Server=localhost;Port=3306;Database=potentialwind;User=root;Password=sua_senha;CharSet=utf8mb4;"
+  &#125;
+&#125;</code></pre>
+    </div>
+  </div>
+</div>

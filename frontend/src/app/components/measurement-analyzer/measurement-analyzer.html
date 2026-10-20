@@ -1,0 +1,165 @@
+<div class="container">
+  <div class="analyzer-header">
+    <div>
+      <h1 class="page-title">Anemometria & Rosa dos Ventos</h1>
+      <p class="page-desc">
+        Tratamento de séries temporais de dados anemométricos, ajuste de Weibull empírico
+        e análise direcional polar do vento (Wind Rose).
+      </p>
+    </div>
+    <div class="farm-sel-box" *ngIf="farms.length > 0">
+      <label>Parque Eólico:</label>
+      <select class="form-control" [(ngModel)]="selectedFarmId" (change)="onFarmChange()">
+        <option *ngFor="let f of farms" [value]="f.id">{{ f.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="card loading-box">
+    <div class="spinner"></div>
+    <p>Processando medições e calculando setores de vento...</p>
+  </div>
+
+  <div *ngIf="!loading && summary">
+    <!-- Summary KPIs -->
+    <div class="grid-4 kpi-stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Registros Medidos</span>
+        <span class="stat-value">{{ summary.totalRecords | number:'1.0-0' }}</span>
+        <span class="stat-sub">Pontos horários na torre</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-label">Velocidade Média</span>
+        <span class="stat-value text-accent">{{ summary.meanSpeed }} <span class="unit">m/s</span></span>
+        <span class="stat-sub">Desvio padrão: &sigma;={{ summary.stdDev }} m/s</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-label">Ajuste Weibull (k / c)</span>
+        <span class="stat-value">k={{ summary.weibullK }}</span>
+        <span class="stat-sub">Escala c = {{ summary.weibullC }} m/s</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-label">Densidade Eólica</span>
+        <span class="stat-value">{{ summary.powerDensity | number:'1.0-0' }} <span class="unit">W/m²</span></span>
+        <span class="stat-sub">{{ summary.windClass }}</span>
+      </div>
+    </div>
+
+    <!-- Main Content: Wind Rose SVG & Direction Table -->
+    <div class="grid-2 main-analyzer-grid">
+      <!-- 16-Sector Polar Wind Rose Radar Diagram -->
+      <div class="card wind-rose-card">
+        <h3 class="card-title">Rosa dos Ventos (16 Setores Direcionais)</h3>
+        <p class="card-desc">Frequência percentual de ocorrência em função da direção do vento.</p>
+
+        <div class="wind-rose-svg-wrapper">
+          <svg class="rose-svg" viewBox="0 0 400 400">
+            <!-- Concentric Range Circles -->
+            <circle cx="200" cy="200" r="40" fill="none" stroke="#e2e8f0" stroke-width="1" />
+            <circle cx="200" cy="200" r="80" fill="none" stroke="#e2e8f0" stroke-width="1" />
+            <circle cx="200" cy="200" r="120" fill="none" stroke="#e2e8f0" stroke-width="1" />
+            <circle cx="200" cy="200" r="160" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
+
+            <!-- Range Labels -->
+            <text x="205" y="162" class="range-label">10%</text>
+            <text x="205" y="122" class="range-label">20%</text>
+            <text x="205" y="82" class="range-label">30%</text>
+            <text x="205" y="42" class="range-label">40%</text>
+
+            <!-- Cardinal Axis Lines -->
+            <line x1="200" y1="20" x2="200" y2="380" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2 3" />
+            <line x1="20" y1="200" x2="380" y2="200" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2 3" />
+
+            <!-- Labels -->
+            <text x="200" y="16" class="rose-cardinal-label text-center">N (0°)</text>
+            <text x="390" y="204" class="rose-cardinal-label">L (90°)</text>
+            <text x="200" y="396" class="rose-cardinal-label text-center">S (180°)</text>
+            <text x="10" y="204" class="rose-cardinal-label">O (270°)</text>
+
+            <!-- Polygon Polygon Path -->
+            <polygon
+              [attr.points]="getWindRosePolygon(summary.windRose)"
+              fill="rgba(16, 185, 129, 0.35)"
+              stroke="#10b981"
+              stroke-width="2.5"
+            />
+
+            <!-- Center Origin -->
+            <circle cx="200" cy="200" r="4" fill="#0f172a" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Sector Breakdown Table -->
+      <div class="card table-card">
+        <div class="table-header-row">
+          <h3 class="card-title">Frequência por Setor Direcional</h3>
+          <button class="btn btn-outline btn-sm" (click)="generateSampleData()" [disabled]="importing">
+            {{ importing ? 'Importando...' : '+ Gerar Mais Medições' }}
+          </button>
+        </div>
+
+        <div class="table-scroll-wrap">
+          <table class="rose-table">
+            <thead>
+              <tr>
+                <th>Setor</th>
+                <th>Ângulo</th>
+                <th>Frequência</th>
+                <th>Vel. Média</th>
+                <th>Ocorrências</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of summary.windRose">
+                <td><strong>{{ s.sector }}</strong></td>
+                <td>{{ s.angle }}°</td>
+                <td>
+                  <div class="freq-bar-wrap">
+                    <div class="freq-bar" [style.width.%]="s.frequencyPercent * 2"></div>
+                    <span class="freq-text">{{ s.frequencyPercent }}%</span>
+                  </div>
+                </td>
+                <td>{{ s.averageSpeed }} m/s</td>
+                <td>{{ s.count }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Measurements Sample Table -->
+    <div class="card mt-4 recent-table-card">
+      <h3 class="card-title">Amostra de Séries Temporais Recentes</h3>
+      <div class="table-scroll-wrap">
+        <table class="rose-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Velocidade (m/s)</th>
+              <th>Direção (°)</th>
+              <th>Altura Torre</th>
+              <th>Temperatura (°C)</th>
+              <th>Pressão (hPa)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of measurements">
+              <td>{{ m.timestamp | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td><strong>{{ m.windSpeed }} m/s</strong></td>
+              <td>{{ m.windDirectionDeg }}°</td>
+              <td>{{ m.measurementHeightM }}m</td>
+              <td>{{ m.temperatureC }} °C</td>
+              <td>{{ m.pressureHPa }} hPa</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

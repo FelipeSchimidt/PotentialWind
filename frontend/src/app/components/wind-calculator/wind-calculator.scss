@@ -1,0 +1,250 @@
+.calc-header {
+  margin-bottom: 2rem;
+}
+
+.calc-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 1.5rem;
+  align-items: flex-start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.presets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.preset-chip {
+  text-align: left;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #e2e8f0;
+    color: var(--text-main);
+  }
+
+  &.selected {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary-hover);
+    font-weight: 600;
+  }
+}
+
+.results-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.kpi-grid {
+  .text-accent {
+    color: var(--accent-wind);
+  }
+}
+
+.turbine-kpi-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+  border: 1px solid #86efac;
+
+  .kpi-turbine-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    @media (max-width: 600px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+  }
+
+  .turbine-aep-val {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #14532d;
+    margin-top: 0.25rem;
+  }
+
+  .unit-lg {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #166534;
+  }
+
+  .cf-box {
+    background: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    text-align: right;
+
+    .cf-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      display: block;
+    }
+
+    .cf-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--accent-wind);
+    }
+  }
+}
+
+.recommendation-banner {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background: #f8fafc;
+  border-left: 4px solid var(--primary);
+
+  .banner-icon {
+    color: var(--primary);
+    flex-shrink: 0;
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .banner-title {
+    font-size: 0.95rem;
+    color: var(--text-main);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .banner-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+}
+
+.tabs-header {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--text-main);
+  }
+
+  &.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+}
+
+.curve-legend {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .legend-color {
+    width: 14px;
+    height: 4px;
+    border-radius: 2px;
+
+    &.legend-weibull {
+      background: #10b981;
+    }
+
+    &.legend-power {
+      background: #0284c7;
+    }
+  }
+}
+
+.weibull-svg {
+  width: 100%;
+  height: auto;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+
+  .axis-label {
+    font-size: 10px;
+    fill: #64748b;
+    font-family: inherit;
+  }
+}
+
+.bins-table-wrapper {
+  overflow-x: auto;
+  max-height: 400px;
+}
+
+.bins-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th, td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    background: var(--bg-alt);
+    font-weight: 600;
+    color: var(--text-muted);
+    position: sticky;
+    top: 0;
+  }
+
+  tr:hover td {
+    background: #f8fafc;
+  }
+
+  .font-highlight {
+    color: var(--primary);
+    font-weight: 600;
+  }
+}

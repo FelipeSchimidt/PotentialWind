@@ -1,0 +1,261 @@
+<div class="container">
+  <div class="designer-header">
+    <div>
+      <h1 class="page-title">Projetista & Layout de Parque Eólico</h1>
+      <p class="page-desc">
+        Configure a quantidade de aerogeradores, espaçamento entre rotores, modelo de perdas por esteira (Jensen)
+        e calcule a Produção Anual de Energia (AEP) líquida.
+      </p>
+    </div>
+    <div class="farm-selector-wrapper" *ngIf="farms.length > 0">
+      <label class="selector-label">Selecionar Projeto:</label>
+      <select class="form-control farm-select" [(ngModel)]="selectedFarmId" (change)="onFarmChange()">
+        <option *ngFor="let f of farms" [value]="f.id">{{ f.name }} ({{ f.location }})</option>
+      </select>
+    </div>
+  </div>
+
+  <div *ngIf="saveMessage" class="alert-success card">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+    <span>{{ saveMessage }}</span>
+  </div>
+
+  <div class="designer-layout" *ngIf="currentFarm">
+    <!-- Left Column: Sizing & Wake Loss Controls -->
+    <div class="card designer-controls">
+      <h2 class="section-title">Dimensionamento & Aerogeradores</h2>
+
+      <div class="form-group">
+        <label>Modelo do Aerogerador</label>
+        <select class="form-control" [(ngModel)]="selectedTurbine" (ngModelChange)="onTurbineChange()">
+          <option *ngFor="let t of turbines" [ngValue]="t">
+            {{ t.manufacturer }} {{ t.modelName }} ({{ t.ratedPowerKW / 1000 }} MW | &empty;{{ t.rotorDiameterM }}m | Alt. {{ t.hubHeightM }}m)
+          </option>
+        </select>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Número de Turbinas (N)</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="turbineCount"
+            (ngModelChange)="recalculateWakeAndArea()"
+            min="1"
+            max="250"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Espaçamento entre Turbinas</label>
+          <div class="slider-wrapper">
+            <input
+              type="range"
+              class="range-slider"
+              [(ngModel)]="turbineSpacingD"
+              (ngModelChange)="recalculateWakeAndArea()"
+              min="3"
+              max="10"
+              step="0.5"
+            />
+            <span class="slider-val">{{ turbineSpacingD }} D</span>
+          </div>
+          <span class="form-hint">Diâmetros de rotor (recomendado: 5D a 7D)</span>
+        </div>
+      </div>
+
+      <!-- Land Footprint Box -->
+      <div class="footprint-box">
+        <div class="fp-item">
+          <span class="fp-label">Capacidade Total</span>
+          <span class="fp-value font-primary">{{ totalFarmCapacityMW }} MW</span>
+        </div>
+        <div class="fp-item">
+          <span class="fp-label">Área do Parque</span>
+          <span class="fp-value">{{ requiredAreaKm2 }} km²</span>
+        </div>
+        <div class="fp-item">
+          <span class="fp-label">Área em Hectares</span>
+          <span class="fp-value">{{ requiredAreaHectares }} ha</span>
+        </div>
+      </div>
+
+      <h2 class="section-title mt-4">Balancete de Perdas Globais</h2>
+
+      <!-- Loss factors inputs -->
+      <div class="losses-grid">
+        <div class="loss-card">
+          <span class="loss-name">Efeito Esteira (Wake)</span>
+          <span class="loss-desc">Interferência aerodinâmica a jusante</span>
+          <div class="loss-input-wrap">
+            <span class="loss-pct-tag">{{ wakeLossPercent }}%</span>
+            <span class="loss-calc-note">(Modelo Jensen)</span>
+          </div>
+        </div>
+
+        <div class="loss-card">
+          <span class="loss-name">Perdas Elétricas</span>
+          <span class="loss-desc">Cabos, trafos e subestações</span>
+          <div class="loss-input-wrap">
+            <input
+              type="number"
+              class="form-control form-control-sm"
+              [(ngModel)]="currentFarm.electricalLossPercentage"
+              step="0.1"
+              min="0"
+              max="10"
+            />
+            <span class="pct-symbol">%</span>
+          </div>
+        </div>
+
+        <div class="loss-card">
+          <span class="loss-name">Indisponibilidade</span>
+          <span class="loss-desc">Manutenções preventivas/corretivas</span>
+          <div class="loss-input-wrap">
+            <input
+              type="number"
+              class="form-control form-control-sm"
+              [(ngModel)]="currentFarm.availabilityLossPercentage"
+              step="0.1"
+              min="0"
+              max="10"
+            />
+            <span class="pct-symbol">%</span>
+          </div>
+        </div>
+
+        <div class="loss-card">
+          <span class="loss-name">Outras Perdas</span>
+          <span class="loss-desc">Degradação das pás, sujeira e rede</span>
+          <div class="loss-input-wrap">
+            <input
+              type="number"
+              class="form-control form-control-sm"
+              [(ngModel)]="currentFarm.otherLossesPercentage"
+              step="0.1"
+              min="0"
+              max="10"
+            />
+            <span class="pct-symbol">%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="total-loss-banner">
+        <span>Perda Total Acumulada do Parque:</span>
+        <strong class="total-loss-val">{{ totalCombinedLossPercent }}%</strong>
+      </div>
+
+      <!-- Action Button -->
+      <div class="action-footer">
+        <button class="btn btn-success btn-block" (click)="runSimulation()" [disabled]="isSimulating">
+          <svg *ngIf="isSimulating" class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="4" stroke-dasharray="30 60" />
+          </svg>
+          <svg *ngIf="!isSimulating" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          {{ isSimulating ? 'Calculando Produção e LCOE...' : 'Executar Simulação de Produção (AEP)' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Interactive Array Visualization -->
+    <div class="designer-results">
+      <!-- Simulation KPI Cards -->
+      <div class="card sim-results-card" *ngIf="simulationResult">
+        <div class="results-header">
+          <div>
+            <span class="badge badge-success">Resultados da Simulação Técnica</span>
+            <h2 class="results-title">Estimativa de Geração & Eficiência</h2>
+          </div>
+          <span class="calc-date">Calculado em: {{ simulationResult.calculatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+
+        <div class="grid-3 kpi-row">
+          <div class="stat-card">
+            <span class="stat-label">AEP Bruto (Sem Perdas)</span>
+            <span class="stat-value">{{ (simulationResult.grossAepMWh / 1000) | number:'1.1-1' }} <span class="unit">GWh/ano</span></span>
+            <span class="stat-sub">{{ simulationResult.grossAepMWh | number:'1.0-0' }} MWh</span>
+          </div>
+
+          <div class="stat-card highlight-green">
+            <span class="stat-label">AEP Líquido (Injetado)</span>
+            <span class="stat-value">{{ (simulationResult.netAepMWh / 1000) | number:'1.1-1' }} <span class="unit">GWh/ano</span></span>
+            <span class="stat-sub text-green">{{ simulationResult.netAepMWh | number:'1.0-0' }} MWh</span>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-label">Fator de Capacidade</span>
+            <span class="stat-value text-accent">{{ simulationResult.capacityFactorPercent }}<span class="unit">%</span></span>
+            <span class="stat-sub">{{ simulationResult.fullLoadHours | number:'1.0-0' }} horas/ano</span>
+          </div>
+        </div>
+
+        <!-- Financial Mini Summary -->
+        <div class="financial-mini-grid">
+          <div class="f-item">
+            <span class="f-label">Receita Anual Estimada</span>
+            <span class="f-val">R$ {{ (simulationResult.annualRevenue / 1000000) | number:'1.2-2' }} M/ano</span>
+          </div>
+          <div class="f-item">
+            <span class="f-label">LCOE (Custo de Energia)</span>
+            <span class="f-val">R$ {{ simulationResult.lcoePerMWh | number:'1.2-2' }} / MWh</span>
+          </div>
+          <div class="f-item">
+            <span class="f-label">Payback Simples</span>
+            <span class="f-val">{{ simulationResult.simplePaybackYears }} anos</span>
+          </div>
+          <div class="f-item">
+            <span class="f-label">TIR (IRR)</span>
+            <span class="f-val font-green">{{ simulationResult.irrPercent }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Turbine Grid Visualizer -->
+      <div class="card visualizer-card">
+        <h3 class="visualizer-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="v-icon">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+          Arranjo Físico Estimado ({{ gridRows }} linhas &times; {{ gridCols }} colunas)
+        </h3>
+        <p class="visualizer-desc">
+          Disposição espacial dos {{ turbineCount }} aerogeradores com espaçamento relativo de {{ turbineSpacingD }}D.
+        </p>
+
+        <div class="wind-direction-indicator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-icon">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <polyline points="19 12 12 19 5 12" />
+          </svg>
+          <span>Direção Predominante do Vento Incidente (A Montante)</span>
+        </div>
+
+        <div class="turbine-grid-container">
+          <div
+            class="turbine-icon-box"
+            *ngFor="let item of [].constructor(turbineCount); let idx = index"
+          >
+            <svg class="turbine-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 9V2" />
+              <path d="M14.5 13.5L20.5 17" />
+              <path d="M9.5 13.5L3.5 17" />
+            </svg>
+            <span class="turbine-num">WTG-{{ idx + 1 < 10 ? '0' + (idx + 1) : (idx + 1) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

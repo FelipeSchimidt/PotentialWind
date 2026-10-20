@@ -1,0 +1,181 @@
+<div class="container">
+  <div class="econ-header">
+    <div>
+      <h1 class="page-title">Viabilidade Econômica & LCOE</h1>
+      <p class="page-desc">
+        Análise de fluxo de caixa descontado, Custo Nivelado da Energia (LCOE),
+        Valor Presente Líquido (VPL / NPV), Taxa Interna de Retorno (TIR / IRR) e impacto socioambiental.
+      </p>
+    </div>
+    <div class="farm-sel-box" *ngIf="farms.length > 0">
+      <label>Selecionar Parque:</label>
+      <select class="form-control" [(ngModel)]="selectedFarmId" (change)="onFarmChange()">
+        <option *ngFor="let f of farms" [value]="f.id">{{ f.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="econ-layout" *ngIf="currentFarm">
+    <!-- Left Column: Financial Assumptions Parameters -->
+    <div class="card params-card">
+      <h2 class="section-title">Premissas Financeiras</h2>
+
+      <div class="form-group">
+        <label>Preço de Venda da Energia (R$/MWh - PPA)</label>
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="currentFarm.energyPriceMWh"
+          (ngModelChange)="updateAndRecalculate()"
+          step="5"
+        />
+        <span class="form-hint">Tarifa contratada no Mercado Livre (ACL) ou Regulado (ACR).</span>
+      </div>
+
+      <div class="form-group">
+        <label>CAPEX por MW Instalado (R$/MW)</label>
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="currentFarm.capexPerMW"
+          (ngModelChange)="updateAndRecalculate()"
+          step="100000"
+        />
+        <span class="form-hint">Média brasileira atual: R$ 5,0 a 6,0 milhões/MW.</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>OPEX Anual (% CAPEX)</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="currentFarm.opexAnnualPercentCapex"
+            (ngModelChange)="updateAndRecalculate()"
+            step="0.1"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Taxa de Desconto (% a.a.)</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="currentFarm.discountRatePercent"
+            (ngModelChange)="updateAndRecalculate()"
+            step="0.5"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Vida Útil do Projeto (Anos)</label>
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="currentFarm.projectLifespanYears"
+          (ngModelChange)="updateAndRecalculate()"
+          min="10"
+          max="35"
+        />
+      </div>
+
+      <!-- Environmental / ESG Impact Box -->
+      <div class="esg-card card" *ngIf="simulation">
+        <div class="esg-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="leaf-icon">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+          </svg>
+          <h3 class="esg-title">Impacto Socioambiental (ESG)</h3>
+        </div>
+
+        <div class="esg-row">
+          <span class="esg-label">CO₂ Evitado Anualmente:</span>
+          <strong class="esg-val">{{ simulation.co2AvoidedTonsPerYear | number:'1.0-0' }} t CO₂/ano</strong>
+        </div>
+
+        <div class="esg-row">
+          <span class="esg-label">Residências Atendidas:</span>
+          <strong class="esg-val">{{ simulation.homesPoweredEstimate | number:'1.0-0' }} famílias</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Monthly Seasonal Generation -->
+    <div class="results-col" *ngIf="simulation">
+      <!-- 4 Main Financial KPIs -->
+      <div class="grid-4 econ-kpis">
+        <div class="stat-card lcoe-card">
+          <span class="stat-label">LCOE (Custo Nivelado)</span>
+          <span class="stat-value text-primary">R$ {{ simulation.lcoePerMWh | number:'1.2-2' }}</span>
+          <span class="stat-sub">Por MWh gerado</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">TIR / IRR</span>
+          <span class="stat-value font-green">{{ simulation.irrPercent }}%</span>
+          <span class="stat-sub">Taxa interna de retorno</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Payback Simples</span>
+          <span class="stat-value">{{ simulation.simplePaybackYears }} <span class="unit">anos</span></span>
+          <span class="stat-sub">Tempo de retorno</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">VPL / NPV</span>
+          <span class="stat-value font-green">R$ {{ (simulation.npv / 1000000) | number:'1.1-1' }} M</span>
+          <span class="stat-sub">Valor presente líquido</span>
+        </div>
+      </div>
+
+      <!-- Financial Totals -->
+      <div class="card totals-card">
+        <div class="totals-grid">
+          <div class="t-col">
+            <span class="t-label">Investimento Total (CAPEX)</span>
+            <span class="t-val">R$ {{ (simulation.totalCapex / 1000000) | number:'1.2-2' }} Milhões</span>
+          </div>
+          <div class="t-col">
+            <span class="t-label">OPEX Anual de O&M</span>
+            <span class="t-val">R$ {{ (simulation.annualOpex / 1000000) | number:'1.2-2' }} M / ano</span>
+          </div>
+          <div class="t-col">
+            <span class="t-label">Receita Bruta Anual</span>
+            <span class="t-val font-green">R$ {{ (simulation.annualRevenue / 1000000) | number:'1.2-2' }} M / ano</span>
+          </div>
+          <div class="t-col">
+            <span class="t-label">Fluxo de Caixa Líquido Anual</span>
+            <span class="t-val font-green">R$ {{ ((simulation.annualRevenue - simulation.annualOpex) / 1000000) | number:'1.2-2' }} M / ano</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Production Bar Chart -->
+      <div class="card monthly-card" *ngIf="monthlyData.length > 0">
+        <h3 class="section-title">Geração Sazonal Mensal (Perfil Brasileiro)</h3>
+        <p class="chart-desc">
+          Produção líquida estimada (MWh) e receita projetada em cada mês do ano.
+        </p>
+
+        <div class="monthly-bars-chart">
+          <div class="month-col" *ngFor="let m of monthlyData">
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                [style.height.%]="(m.netMWh / getMaxMonthlyEnergy()) * 100"
+                [title]="m.monthName + ': ' + (m.netMWh | number:'1.0-0') + ' MWh'"
+              >
+                <span class="bar-tooltip">{{ m.netMWh | number:'1.0-0' }}</span>
+              </div>
+            </div>
+            <span class="month-label">{{ m.monthName }}</span>
+            <span class="month-speed">{{ m.averageSpeed }} m/s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

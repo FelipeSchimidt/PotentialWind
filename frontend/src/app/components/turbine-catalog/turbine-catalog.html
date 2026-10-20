@@ -1,0 +1,187 @@
+<div class="container">
+  <div class="catalog-header">
+    <div>
+      <h1 class="page-title">Catálogo de Aerogeradores</h1>
+      <p class="page-desc">
+        Base de dados de turbinas eólicas comerciais de última geração (Vestas, Siemens Gamesa, GE, Nordex)
+        com curvas de potência $P(v)$ e parâmetros aerodinâmicos.
+      </p>
+    </div>
+    <button class="btn btn-primary" (click)="showModal = true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Novo Modelo
+    </button>
+  </div>
+
+  <div class="catalog-layout">
+    <!-- Left List: Turbines List -->
+    <div class="turbines-list">
+      <div
+        *ngFor="let t of turbines"
+        class="card turbine-item-card"
+        [class.selected]="selectedTurbine?.id === t.id"
+        (click)="selectTurbine(t)"
+      >
+        <div class="t-item-header">
+          <span class="badge badge-primary">{{ t.manufacturer }}</span>
+          <button class="btn-del" (click)="deleteTurbine(t.id, $event)" title="Excluir">
+            &times;
+          </button>
+        </div>
+        <h3 class="t-name">{{ t.modelName }}</h3>
+        <div class="t-power-tag">
+          {{ t.ratedPowerKW / 1000 }} MW <span class="sub-power">({{ t.ratedPowerKW | number:'1.0-0' }} kW)</span>
+        </div>
+        <div class="t-mini-specs">
+          <span>&empty; Rotor: {{ t.rotorDiameterM }}m</span>
+          <span>&bull;</span>
+          <span>Torre: {{ t.hubHeightM }}m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Detail & Interactive Power Curve Plot -->
+    <div class="card turbine-detail-card" *ngIf="selectedTurbine">
+      <div class="detail-header">
+        <div>
+          <span class="badge badge-success">{{ selectedTurbine.manufacturer }}</span>
+          <h2 class="detail-title">{{ selectedTurbine.modelName }}</h2>
+        </div>
+        <div class="detail-rated-box">
+          <span class="d-label">Potência Nominal</span>
+          <span class="d-val">{{ selectedTurbine.ratedPowerKW / 1000 }} MW</span>
+        </div>
+      </div>
+
+      <!-- Specs Grid -->
+      <div class="grid-4 specs-box">
+        <div class="stat-card">
+          <span class="stat-label">Diâmetro do Rotor</span>
+          <span class="stat-value">{{ selectedTurbine.rotorDiameterM }} <span class="unit">m</span></span>
+          <span class="stat-sub">Área: {{ (3.14159 * (selectedTurbine.rotorDiameterM/2) * (selectedTurbine.rotorDiameterM/2)) | number:'1.0-0' }} m²</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Altura do Cubo (Torre)</span>
+          <span class="stat-value">{{ selectedTurbine.hubHeightM }} <span class="unit">m</span></span>
+          <span class="stat-sub">Hub Height padrão</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Cut-in / Rated / Cut-out</span>
+          <span class="stat-value">{{ selectedTurbine.cutInSpeed }} / {{ selectedTurbine.ratedSpeed }} / {{ selectedTurbine.cutOutSpeed }}</span>
+          <span class="stat-sub">Velocidades em m/s</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Área Específica</span>
+          <span class="stat-value">
+            {{ ((3.14159 * (selectedTurbine.rotorDiameterM/2) * (selectedTurbine.rotorDiameterM/2)) / (selectedTurbine.ratedPowerKW / 1000)) | number:'1.1-1' }}
+            <span class="unit">m²/MW</span>
+          </span>
+          <span class="stat-sub">Relação rotor/potência</span>
+        </div>
+      </div>
+
+      <!-- Power Curve Plot -->
+      <h3 class="curve-title mt-4">Curva de Potência Elétrica P(v)</h3>
+      <p class="curve-desc">
+        Rendimento elétrico do gerador em função da velocidade do vento (m/s).
+        Partida em {{ selectedTurbine.cutInSpeed }} m/s, potência nominal atingida em {{ selectedTurbine.ratedSpeed }} m/s,
+        e parada por proteção (cut-out) em {{ selectedTurbine.cutOutSpeed }} m/s.
+      </p>
+
+      <div class="power-curve-svg-wrapper">
+        <svg class="curve-svg" viewBox="0 0 600 260">
+          <line x1="0" y1="40" x2="600" y2="40" stroke="#f1f5f9" stroke-width="1" />
+          <line x1="0" y1="90" x2="600" y2="90" stroke="#f1f5f9" stroke-width="1" />
+          <line x1="0" y1="140" x2="600" y2="140" stroke="#f1f5f9" stroke-width="1" />
+          <line x1="0" y1="190" x2="600" y2="190" stroke="#f1f5f9" stroke-width="1" />
+          <line x1="0" y1="240" x2="600" y2="240" stroke="#cbd5e1" stroke-width="1.5" />
+
+          <!-- X axis -->
+          <text x="5" y="255" class="axis-txt">0 m/s</text>
+          <text x="120" y="255" class="axis-txt">5 m/s</text>
+          <text x="240" y="255" class="axis-txt">10 m/s</text>
+          <text x="360" y="255" class="axis-txt">15 m/s</text>
+          <text x="480" y="255" class="axis-txt">20 m/s</text>
+          <text x="560" y="255" class="axis-txt">25 m/s</text>
+
+          <!-- Filled Curve -->
+          <path
+            [attr.d]="getSvgPowerCurve()"
+            fill="rgba(2, 132, 199, 0.15)"
+            stroke="#0284c7"
+            stroke-width="2.5"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Turbine Modal -->
+  <div class="modal-backdrop" *ngIf="showModal">
+    <div class="modal-card card">
+      <div class="modal-header">
+        <h2 class="modal-title">Novo Modelo de Aerogerador</h2>
+        <button class="btn-close" (click)="showModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Fabricante *</label>
+            <input type="text" class="form-control" [(ngModel)]="newTurbine.manufacturer" placeholder="Ex: Vestas, Siemens Gamesa..." />
+          </div>
+
+          <div class="form-group">
+            <label>Modelo *</label>
+            <input type="text" class="form-control" [(ngModel)]="newTurbine.modelName" placeholder="Ex: V172-7.2 MW" />
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Potência Nominal (kW) *</label>
+            <input type="number" class="form-control" [(ngModel)]="newTurbine.ratedPowerKW" step="100" />
+          </div>
+
+          <div class="form-group">
+            <label>Diâmetro do Rotor (m)</label>
+            <input type="number" class="form-control" [(ngModel)]="newTurbine.rotorDiameterM" step="1" />
+          </div>
+
+          <div class="form-group">
+            <label>Altura da Torre (m)</label>
+            <input type="number" class="form-control" [(ngModel)]="newTurbine.hubHeightM" step="1" />
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Cut-in Speed (m/s)</label>
+            <input type="number" class="form-control" [(ngModel)]="newTurbine.cutInSpeed" step="0.5" />
+          </div>
+
+          <div class="form-group">
+            <label>Rated Speed (m/s)</label>
+            <input type="number" class="form-control" [(ngModel)]="newTurbine.ratedSpeed" step="0.5" />
+          </div>
+
+          <div class="form-group">
+            <label>Cut-out Speed (m/s)</label>
+            <input type="number" class="form-control" [(ngModel)]="newTurbine.cutOutSpeed" step="0.5" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showModal = false">Cancelar</button>
+        <button class="btn btn-primary" (click)="createTurbine()">Cadastrar Aerogerador</button>
+      </div>
+    </div>
+  </div>
+</div>

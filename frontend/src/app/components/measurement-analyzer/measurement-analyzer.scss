@@ -1,0 +1,157 @@
+.analyzer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.farm-sel-box {
+  background: white;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+}
+
+.loading-box {
+  text-align: center;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.kpi-stats-grid {
+  margin-bottom: 1.5rem;
+
+  .text-accent {
+    color: var(--accent-wind);
+  }
+}
+
+.main-analyzer-grid {
+  align-items: stretch;
+}
+
+.wind-rose-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+  align-self: flex-start;
+}
+
+.card-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  align-self: flex-start;
+}
+
+.wind-rose-svg-wrapper {
+  width: 100%;
+  max-width: 380px;
+  margin: auto;
+}
+
+.rose-svg {
+  width: 100%;
+  height: auto;
+
+  .range-label {
+    font-size: 9px;
+    fill: #94a3b8;
+  }
+
+  .rose-cardinal-label {
+    font-size: 11px;
+    font-weight: 700;
+    fill: #0f172a;
+
+    &.text-center {
+      text-anchor: middle;
+    }
+  }
+}
+
+.table-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.table-scroll-wrap {
+  overflow-y: auto;
+  max-height: 420px;
+}
+
+.rose-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th, td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    background: var(--bg-alt);
+    font-weight: 600;
+    color: var(--text-muted);
+    position: sticky;
+    top: 0;
+  }
+
+  .freq-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .freq-bar {
+    height: 8px;
+    background: var(--accent-wind);
+    border-radius: 4px;
+    min-width: 2px;
+  }
+
+  .freq-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+}
+
+.recent-table-card {
+  margin-top: 1.5rem;
+}

@@ -1,0 +1,255 @@
+<div class="container">
+  <!-- Hero Section -->
+  <div class="dashboard-header">
+    <div>
+      <h1 class="page-title">Projetos & Parques Eólicos</h1>
+      <p class="page-desc">
+        Planejamento técnico, modelagem anemométrica de Weibull e estimativa de produção anual de energia (AEP).
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" routerLink="/calculator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+        Análise Rápida
+      </button>
+      <button class="btn btn-primary" (click)="showCreateModal = true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Novo Parque Eólico
+      </button>
+    </div>
+  </div>
+
+  <!-- Key Metrics Stats -->
+  <div class="grid-4 stats-grid">
+    <div class="stat-card">
+      <span class="stat-label">Parques Cadastrados</span>
+      <span class="stat-value">{{ windFarms.length }}</span>
+      <span class="stat-sub">Sítios monitorados</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">Capacidade Planejada</span>
+      <span class="stat-value">{{ totalCapacityMW | number:'1.1-1' }} <span class="unit">MW</span></span>
+      <span class="stat-sub">Potência nominal total</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">Geração Líquida (AEP)</span>
+      <span class="stat-value">{{ totalAepGWh | number:'1.1-1' }} <span class="unit">GWh/ano</span></span>
+      <span class="stat-sub">Considerando perdas</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-label">Fator de Capacidade Médio</span>
+      <span class="stat-value">{{ averageCapacityFactor }}<span class="unit">%</span></span>
+      <span class="stat-sub">Eficiência líquida</span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state card">
+    <div class="spinner"></div>
+    <p>Carregando projetos e dados anemométricos...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && windFarms.length === 0" class="empty-state card">
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 9V2m2.5 11.5L20.5 17m-11-3.5L3.5 17" />
+    </svg>
+    <h3>Nenhum parque eólico cadastrado</h3>
+    <p>Crie seu primeiro projeto para calcular o potencial energético e realizar estudos de viabilidade.</p>
+    <button class="btn btn-primary" (click)="showCreateModal = true">Criar Parque Eólico</button>
+  </div>
+
+  <!-- Project Cards List -->
+  <div *ngIf="!loading && windFarms.length > 0" class="grid-2 farm-cards-grid">
+    <div *ngFor="let farm of windFarms" class="card farm-card">
+      <div class="farm-card-header">
+        <div>
+          <div class="farm-badges">
+            <span class="badge badge-primary">{{ farm.location || 'Localização não definida' }}</span>
+            <span *ngIf="farm.latestSimulation?.windClass" class="badge badge-success">
+              {{ farm.latestSimulation?.windClass }}
+            </span>
+          </div>
+          <h2 class="farm-title">{{ farm.name }}</h2>
+        </div>
+        <button class="btn-icon-danger" (click)="deleteFarm(farm.id, $event)" title="Excluir Parque">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </button>
+      </div>
+
+      <p class="farm-desc">{{ farm.description || 'Sem descrição cadastrada.' }}</p>
+
+      <div class="farm-specs-grid">
+        <div class="spec-item">
+          <span class="spec-label">Aerogerador</span>
+          <span class="spec-value">{{ farm.selectedTurbine?.modelName || 'Não selecionado' }}</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">Qtd. Turbinas</span>
+          <span class="spec-value">{{ farm.turbineCount }} unid.</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">Capacidade</span>
+          <span class="spec-value font-highlight">{{ (farm.totalCapacityMW || 0) | number:'1.1-1' }} MW</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">Espaçamento</span>
+          <span class="spec-value">{{ farm.turbineSpacingD }} D</span>
+        </div>
+      </div>
+
+      <!-- Simulation Summary Box -->
+      <div class="sim-summary-box" *ngIf="farm.latestSimulation; else noSim">
+        <div class="sim-row">
+          <span class="sim-label">Vento no Cubo (Hub):</span>
+          <span class="sim-val font-highlight">{{ farm.latestSimulation.averageWindSpeedAtHub }} m/s</span>
+        </div>
+        <div class="sim-row">
+          <span class="sim-label">Weibull (k / c):</span>
+          <span class="sim-val">k={{ farm.latestSimulation.weibullK }} / c={{ farm.latestSimulation.weibullC }} m/s</span>
+        </div>
+        <div class="sim-row">
+          <span class="sim-label">AEP Líquido:</span>
+          <span class="sim-val">{{ farm.latestSimulation.netAepMWh | number:'1.0-0' }} MWh/ano</span>
+        </div>
+        <div class="sim-row">
+          <span class="sim-label">Fator de Capacidade:</span>
+          <span class="sim-val tag-cf">{{ farm.latestSimulation.capacityFactorPercent }}%</span>
+        </div>
+        <div class="sim-row">
+          <span class="sim-label">LCOE Estimado:</span>
+          <span class="sim-val">R$ {{ farm.latestSimulation.lcoePerMWh | number:'1.2-2' }} / MWh</span>
+        </div>
+      </div>
+
+      <ng-template #noSim>
+        <div class="no-sim-box">
+          <p>Nenhuma simulação de potencial executada ainda.</p>
+        </div>
+      </ng-template>
+
+      <!-- Card Footer Actions -->
+      <div class="farm-card-footer">
+        <button
+          class="btn btn-success btn-sm"
+          (click)="runSimulation(farm)"
+          [disabled]="simulatingId === farm.id"
+        >
+          <svg *ngIf="simulatingId === farm.id" class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" stroke-width="4" stroke-dasharray="30 60" />
+          </svg>
+          <svg *ngIf="simulatingId !== farm.id" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          {{ simulatingId === farm.id ? 'Calculando...' : 'Rodar Simulação' }}
+        </button>
+
+        <a [routerLink]="['/designer']" [queryParams]="{ farmId: farm.id }" class="btn btn-outline btn-sm">
+          Ajustar Layout & Perdas
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Farm Modal -->
+  <div class="modal-backdrop" *ngIf="showCreateModal">
+    <div class="modal-card card">
+      <div class="modal-header">
+        <h2 class="modal-title">Novo Projeto de Parque Eólico</h2>
+        <button class="btn-close" (click)="showCreateModal = false">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Nome do Parque *</label>
+            <input type="text" class="form-control" [(ngModel)]="newFarm.name" placeholder="Ex: Parque Eólico Ventos do Sul" />
+          </div>
+
+          <div class="form-group">
+            <label>Localização / Município</label>
+            <input type="text" class="form-control" [(ngModel)]="newFarm.location" placeholder="Ex: Caetité - BA" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Descrição do Projeto</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="newFarm.description" placeholder="Objetivos do projeto, relevo, características dos ventos..."></textarea>
+        </div>
+
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Modelo de Aerogerador *</label>
+            <select class="form-control" [(ngModel)]="newFarm.selectedTurbineId">
+              <option *ngFor="let t of turbines" [value]="t.id">
+                {{ t.manufacturer }} {{ t.modelName }} ({{ t.ratedPowerKW / 1000 }} MW)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Qtd. de Turbinas</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.turbineCount" min="1" max="500" />
+          </div>
+
+          <div class="form-group">
+            <label>Espaçamento (D)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.turbineSpacingD" step="0.5" min="3" max="12" />
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Altitude Média (m)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.altitudeM" />
+          </div>
+
+          <div class="form-group">
+            <label>Cisalhamento Alpha (Hellmann)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.roughnessExponent" step="0.01" />
+          </div>
+
+          <div class="form-group">
+            <label>Densidade do Ar (kg/m³)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.airDensityKgM3" step="0.005" />
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Preço PPA (R$/MWh)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.energyPriceMWh" />
+          </div>
+
+          <div class="form-group">
+            <label>CAPEX (R$/MW)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.capexPerMW" step="100000" />
+          </div>
+
+          <div class="form-group">
+            <label>Vida Útil (Anos)</label>
+            <input type="number" class="form-control" [(ngModel)]="newFarm.projectLifespanYears" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showCreateModal = false">Cancelar</button>
+        <button class="btn btn-primary" (click)="createFarm()">Salvar e Cadastrar</button>
+      </div>
+    </div>
+  </div>
+</div>

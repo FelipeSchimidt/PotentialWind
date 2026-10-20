@@ -1,0 +1,250 @@
+<div class="container">
+  <div class="calc-header">
+    <h1 class="page-title">Calculadora de Potencial Eólico & Weibull</h1>
+    <p class="page-desc">
+      Modele a distribuição estatística do vento, extrapole perfis verticais com a Lei de Potência de Hellmann
+      e dimensione o rendimento anual de geração (AEP).
+    </p>
+  </div>
+
+  <div class="calc-layout">
+    <!-- Left Column: Input Parameters Form -->
+    <div class="card form-panel">
+      <h2 class="panel-title">Parâmetros de Entrada</h2>
+
+      <div class="form-group">
+        <label>Velocidade Média do Vento Medida (m/s) *</label>
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="request.averageWindSpeed"
+          (ngModelChange)="calculate()"
+          step="0.1"
+          min="1"
+          max="30"
+        />
+        <span class="form-hint">Velocidade média na torre anemométrica de medição.</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Altura de Medição (m)</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="request.referenceHeightM"
+            (ngModelChange)="calculate()"
+            step="5"
+            min="10"
+            max="150"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Altura do Cubo / Rotor (m)</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="request.targetHeightM"
+            (ngModelChange)="calculate()"
+            step="5"
+            min="30"
+            max="250"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Cisalhamento Vertical Alpha (&alpha; - Hellmann)</label>
+        <input
+          type="number"
+          class="form-control"
+          [(ngModel)]="request.roughnessAlpha"
+          (ngModelChange)="calculate()"
+          step="0.01"
+          min="0.05"
+          max="0.40"
+        />
+        <div class="presets-list">
+          <button
+            *ngFor="let p of terrainPresets"
+            class="preset-chip"
+            [class.selected]="request.roughnessAlpha === p.alpha"
+            (click)="applyPreset(p.alpha)"
+          >
+            {{ p.name }} (&alpha;={{ p.alpha }})
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Densidade do Ar (&rho; kg/m³)</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="request.airDensityKgM3"
+            (ngModelChange)="calculate()"
+            step="0.005"
+            min="0.90"
+            max="1.35"
+          />
+          <span class="form-hint">Nível do mar padrão = 1.225 kg/m³</span>
+        </div>
+
+        <div class="form-group">
+          <label>Aerogerador Referência</label>
+          <select class="form-control" [(ngModel)]="request.turbineId" (ngModelChange)="calculate()">
+            <option [ngValue]="undefined">Sem turbina (Apenas Recurso)</option>
+            <option *ngFor="let t of turbines" [value]="t.id">
+              {{ t.manufacturer }} {{ t.modelName }} ({{ t.ratedPowerKW / 1000 }} MW)
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Interactive Curve -->
+    <div class="results-panel">
+      <!-- KPI Highlights -->
+      <div class="grid-3 kpi-grid" *ngIf="result">
+        <div class="stat-card">
+          <span class="stat-label">Vento no Cubo ({{ result.targetHeightM }}m)</span>
+          <span class="stat-value text-accent">{{ result.extrapolatedSpeedMs }} <span class="unit">m/s</span></span>
+          <span class="stat-sub">Origem: {{ result.referenceSpeedMs }} m/s a {{ result.referenceHeightM }}m</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Weibull (k / c)</span>
+          <span class="stat-value">k={{ result.weibullK }}</span>
+          <span class="stat-sub">Escala c = {{ result.weibullC }} m/s</span>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Densidade de Potência</span>
+          <span class="stat-value">{{ result.powerDensityWM2 | number:'1.0-0' }} <span class="unit">W/m²</span></span>
+          <span class="stat-sub">{{ result.windClass }}</span>
+        </div>
+      </div>
+
+      <!-- Turbine AEP KPI Card if turbine selected -->
+      <div class="turbine-kpi-card card" *ngIf="result?.singleTurbineGrossAepMWh">
+        <div class="kpi-turbine-header">
+          <div>
+            <span class="badge badge-success">Geração Bruta Estimada por Turbina</span>
+            <h3 class="turbine-aep-val">
+              {{ result?.singleTurbineGrossAepMWh | number:'1.0-0' }} <span class="unit-lg">MWh/ano</span>
+            </h3>
+          </div>
+          <div class="cf-box">
+            <span class="cf-label">Fator de Capacidade Bruto</span>
+            <span class="cf-val">{{ result?.singleTurbineCapacityFactorPercent }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendation Alert -->
+      <div class="recommendation-banner card" *ngIf="result">
+        <div class="banner-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </div>
+        <div class="banner-content">
+          <strong class="banner-title">Classificação IEC: {{ result.windClass }}</strong>
+          <p class="banner-text">{{ result.recommendation }}</p>
+        </div>
+      </div>
+
+      <!-- Charts / Tabs Section -->
+      <div class="card chart-card" *ngIf="result">
+        <div class="tabs-header">
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'curve'"
+            (click)="activeTab = 'curve'"
+          >
+            Curva de Weibull & Potência
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'bins'"
+            (click)="activeTab = 'bins'"
+          >
+            Tabela de Classes de Vento (Bins)
+          </button>
+        </div>
+
+        <!-- Tab 1: Interactive SVG Curve -->
+        <div *ngIf="activeTab === 'curve'" class="curve-container">
+          <div class="curve-legend">
+            <span class="legend-item">
+              <span class="legend-color legend-weibull"></span>
+              Densidade de Probabilidade Weibull f(v)
+            </span>
+            <span class="legend-item" *ngIf="result.singleTurbineGrossAepMWh">
+              <span class="legend-color legend-power"></span>
+              Curva de Potência da Turbina P(v)
+            </span>
+          </div>
+
+          <svg class="weibull-svg" viewBox="0 0 600 260">
+            <!-- Grid Lines -->
+            <line x1="0" y1="40" x2="600" y2="40" stroke="#f1f5f9" stroke-width="1" />
+            <line x1="0" y1="90" x2="600" y2="90" stroke="#f1f5f9" stroke-width="1" />
+            <line x1="0" y1="140" x2="600" y2="140" stroke="#f1f5f9" stroke-width="1" />
+            <line x1="0" y1="190" x2="600" y2="190" stroke="#f1f5f9" stroke-width="1" />
+            <line x1="0" y1="240" x2="600" y2="240" stroke="#cbd5e1" stroke-width="1.5" />
+
+            <!-- Speed X Axis Markers -->
+            <text x="10" y="255" class="axis-label">0 m/s</text>
+            <text x="120" y="255" class="axis-label">5 m/s</text>
+            <text x="240" y="255" class="axis-label">10 m/s</text>
+            <text x="360" y="255" class="axis-label">15 m/s</text>
+            <text x="480" y="255" class="axis-label">20 m/s</text>
+            <text x="580" y="255" class="axis-label">25 m/s</text>
+
+            <!-- Weibull Area & Line -->
+            <path [attr.d]="getSvgPath(result.windBins)" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="2.5" />
+
+            <!-- Turbine Power Curve Line if available -->
+            <path
+              *ngIf="result.singleTurbineGrossAepMWh"
+              [attr.d]="getSvgPowerPath(result.windBins)"
+              fill="none"
+              stroke="#0284c7"
+              stroke-width="2.5"
+              stroke-dasharray="4 2"
+            />
+          </svg>
+        </div>
+
+        <!-- Tab 2: Bins Data Table -->
+        <div *ngIf="activeTab === 'bins'" class="bins-table-wrapper">
+          <table class="bins-table">
+            <thead>
+              <tr>
+                <th>Vento (m/s)</th>
+                <th>Probabilidade f(v)</th>
+                <th>Horas / Ano</th>
+                <th>Potência Turbina (kW)</th>
+                <th>Energia Gerada (MWh)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let b of result.windBins">
+                <td><strong>{{ b.windSpeed }}</strong></td>
+                <td>{{ (b.probabilityDensity * 100) | number:'1.2-2' }}%</td>
+                <td>{{ b.hoursPerYear | number:'1.0-0' }} h</td>
+                <td>{{ b.turbinePowerKW | number:'1.0-0' }} kW</td>
+                <td class="font-highlight">{{ b.energyMWh | number:'1.1-1' }} MWh</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

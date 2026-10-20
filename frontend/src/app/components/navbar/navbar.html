@@ -1,0 +1,73 @@
+<header class="navbar">
+  <div class="nav-container">
+    <a routerLink="/" class="nav-brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 9V2" />
+        <path d="M14.5 13.5L20.5 17" />
+        <path d="M9.5 13.5L3.5 17" />
+        <circle cx="12" cy="12" r="9" stroke-dasharray="2 4" stroke-opacity="0.4" />
+      </svg>
+      <div class="brand-text">
+        <span class="brand-title">PotentialWind</span>
+        <span class="brand-subtitle">Análise & Potencial Eólico</span>
+      </div>
+    </a>
+
+    <nav class="nav-links">
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="link-icon">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+        Painel
+      </a>
+
+      <a routerLink="/calculator" routerLinkActive="active" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="link-icon">
+          <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+        </svg>
+        Calculadora Weibull
+      </a>
+
+      <a routerLink="/designer" routerLinkActive="active" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="link-icon">
+          <path d="M3 21h18M5 21V7l8-4v18M13 10l8 4v7" />
+        </svg>
+        Projetista de Parque
+      </a>
+
+      <a routerLink="/turbines" routerLinkActive="active" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="link-icon">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 9V2" />
+          <path d="M14.5 13.5L20.5 17" />
+          <path d="M9.5 13.5L3.5 17" />
+        </svg>
+        Aerogeradores
+      </a>
+
+      <a routerLink="/measurements" routerLinkActive="active" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="link-icon">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+        Rosa dos Ventos
+      </a>
+
+      <a routerLink="/economics" routerLinkActive="active" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="link-icon">
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+        Viabilidade LCOE
+      </a>
+
+      <a routerLink="/database" routerLinkActive="active" class="nav-link nav-db">
+        <span class="db-dot" [class.connected]="dbStatus?.canConnect"></span>
+        <span class="db-name">{{ dbStatus?.currentProvider || 'Banco' }}</span>
+      </a>
+    </nav>
+  </div>
+</header>
