@@ -38,6 +38,7 @@ yarn-debug.log*
 yarn-error.log*
 TestResults/
 coverage/
+reports/
 
 # Environment and secrets
 .env
