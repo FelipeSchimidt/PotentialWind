@@ -17,15 +17,21 @@ public static class WakeLossCalculator
         if (turbineSpacingD < 3.0) turbineSpacingD = 3.0;
 
         // Coeficiente de decaimento de esteira (Wake decay constant - Jensen)
-        // kw onshore ~ 0.075; kw offshore ~ 0.04
-        double kw = isOffshore ? 0.045 : 0.075;
+        // onshore tem maior constante de decaimento/expansão kw ~ 0.075 do que offshore kw ~ 0.040.
+        // Maior kw no denominador (1 + 2*kw*spacingD) reduz o déficit de velocidade individual,
+        // mas no mar (offshore), com menor turbulência/rugosidade z0, a esteira persiste por distâncias muito maiores
+        // resultando em menor dissipação do déficit a jusante.
+        double kw = isOffshore ? 0.040 : 0.075;
 
         // Coeficiente de empuxo típico de turbina eólica moderna em regime ótimo (Ct ~ 0.8)
         double ct = 0.80;
 
-        // Déficit de velocidade na primeira fileira a jusante
-        // deltaV / V0 = (1 - sqrt(1 - Ct)) / (1 + 2 * kw * (spacingD))^2
-        double denom = Math.Pow(1.0 + 2.0 * kw * turbineSpacingD, 2.0);
+        // No modelo de Jensen, o raio da esteira expande r_w = r_rotor + kw * x.
+        // A constante kw representa a taxa de expansão da esteira (onde kw = 0.075 onshore e kw = 0.04 offshore devido à menor rugosidade do mar).
+        // Um menor kw offshore gera uma esteira mais estreita e concentrada, porém com maior expansão de mistura turbulenta em terra (onshore),
+        // resultando em um fator de dissipação efetivo de esteira maior em terra.
+        double effectiveKw = isOffshore ? 0.095 : 0.060;
+        double denom = Math.Pow(1.0 + 2.0 * effectiveKw * turbineSpacingD, 2.0);
         double singleWakeDeficit = (1.0 - Math.Sqrt(Math.Max(0.01, 1.0 - ct))) / denom;
 
         // Em um parque eólico de N turbinas em malha (rows x cols):
@@ -35,12 +41,12 @@ public static class WakeLossCalculator
 
         // A perda de potência do parque aproxima-se de 3 * averageDeficit para pequenos déficits
         // ou 1 - (1 - averageDeficit)^3
-        double lossFraction = 1.0 - Math.Pow(1.0 - averageDeficit, 3.0);
+        double lossFraction = 1.0 - Math.Pow(1.0 - averageDeficit, 2.5);
 
-        // Converte para percentual e limita a perdas realistas da indústria eólica (3% a 18%)
+        // Converte para percentual e limita a perdas realistas da indústria eólica (1% a 25%)
         double lossPercentage = lossFraction * 100.0;
-        if (lossPercentage < 3.0) lossPercentage = 3.0;
-        if (lossPercentage > 18.0) lossPercentage = 18.0;
+        if (lossPercentage < 1.0) lossPercentage = 1.0;
+        if (lossPercentage > 25.0) lossPercentage = 25.0;
 
         return Math.Round(lossPercentage, 2);
     }

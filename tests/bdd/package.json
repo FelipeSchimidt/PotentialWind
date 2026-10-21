@@ -1,0 +1,13 @@
+{
+  "name": "potentialwind-bdd-tests",
+  "version": "1.0.0",
+  "description": "Testes BDD automatizados com Cucumber.js para o sistema PotentialWind",
+  "main": "index.js",
+  "scripts": {
+    "test": "cucumber-js"
+  },
+  "dependencies": {
+    "@cucumber/cucumber": "^11.2.0",
+    "axios": "^1.8.2"
+  }
+}
